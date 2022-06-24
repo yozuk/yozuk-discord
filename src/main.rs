@@ -60,6 +60,9 @@ impl EventHandler for Handler {
                                 if let Err(why) = msg.reply(&ctx.http, text).await {
                                     println!("Error sending message: {:?}", why);
                                 }
+                            } else {
+                                let files = vec![(data.data.as_ref(), data.file_name.as_str())];
+                                let _ = msg.channel_id.send_files(&ctx.http, files, |m| m).await;
                             }
                         }
                         _ => {}
