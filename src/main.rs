@@ -1,12 +1,15 @@
 use std::env;
 
+use futures::future::join_all;
 use lazy_regex::regex_replace_all;
+use mediatype::{media_type, MediaType};
 use serenity::async_trait;
 use serenity::http::client::Http;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::id::UserId;
 use serenity::prelude::*;
+use std::io::Cursor;
 use std::str;
 use std::sync::Arc;
 use yozuk::Yozuk;
@@ -29,8 +32,24 @@ impl EventHandler for Handler {
                 & msg.content,
                 |_| String::new(),
             );
+
+            let attachments = join_all(msg.attachments.iter().map(|att| att.download())).await;
+            let mut attachments = attachments
+                .into_iter()
+                .zip(&msg.attachments)
+                .filter_map(|(data, att)| data.ok().map(|data| (data, att.content_type.as_ref())))
+                .map(|(data, content_type)| {
+                    InputStream::new(
+                        Cursor::new(data),
+                        content_type
+                            .and_then(|ty| MediaType::parse(ty).ok())
+                            .unwrap_or(media_type!(APPLICATION / OCTET_STREAM)),
+                    )
+                })
+                .collect::<Vec<_>>();
+
             let tokens = Tokenizer::new().tokenize(&content);
-            let commands = self.yozuk.get_commands(&tokens, &[]);
+            let commands = self.yozuk.get_commands(&tokens, &attachments);
             if commands.is_empty() {
                 if let Err(why) = msg
                     .reply(&ctx.http, "Sorry, I can't understand your request.")
@@ -41,7 +60,7 @@ impl EventHandler for Handler {
                 return;
             }
 
-            let result = self.yozuk.run_commands(commands, &mut [], None);
+            let result = self.yozuk.run_commands(commands, &mut attachments, None);
             let outputs = match result {
                 Ok(outputs) => outputs,
                 Err(outputs) => outputs,
