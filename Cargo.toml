@@ -7,11 +7,11 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.58"
-clap = { version = "3.2.6", features = ["env"] }
+clap = { version = "3.2.8", features = ["env"] }
 futures = "0.3.21"
 lazy-regex = "2.3.0"
 mediatype = "0.19.3"
 serenity = { version = "0.11.2", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "http"] }
 tokio = { version = "1.19.2", features = ["macros", "rt-multi-thread"] }
-yozuk = { version = "0.19.2", features = ["rayon"] }
+yozuk = { version = "0.19.3", features = ["rayon"] }
 yozuk-sdk = "0.19.1"
