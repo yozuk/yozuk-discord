@@ -73,24 +73,38 @@ async fn handle_message(handler: &Handler, ctx: Context, msg: Message) -> Result
             Err(outputs) => outputs,
         };
 
+        let mut content = vec![];
+        let mut files = vec![];
+
         for output in outputs {
             for block in output.blocks {
                 match block {
                     Block::Comment(comment) => {
-                        msg.reply(&ctx.http, comment.text).await?;
+                        content.push(comment.text);
                     }
                     Block::Data(data) => {
                         if let Ok(text) = str::from_utf8(&data.data) {
-                            msg.reply(&ctx.http, text).await?;
+                            content.push(format!("```\n{}\n```", text));
                         } else {
-                            let files = vec![(data.data.as_ref(), data.file_name.as_str())];
-                            msg.channel_id.send_files(&ctx.http, files, |m| m).await?;
+                            files.push((data.data.clone(), data.file_name.clone()));
                         }
                     }
                     _ => {}
                 }
             }
         }
+
+        msg.channel_id
+            .send_message(&ctx.http, |m| {
+                m.content(content.join("\n"))
+                    .add_files(
+                        files
+                            .iter()
+                            .map(|(data, name)| (data.as_ref(), name.as_str())),
+                    )
+                    .reference_message(&msg)
+            })
+            .await?;
     }
     Ok(())
 }
