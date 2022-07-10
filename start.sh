@@ -1,4 +1,4 @@
 #!/bin/bash
 
-http-server -p $PORT &
+http-server -h 0.0.0.0 -p $PORT &
 yozuk-discord
