@@ -3,8 +3,7 @@ RUN apt-get update && apt-get install -y cmake
 WORKDIR /usr/src/app
 
 RUN cargo install http-server
-COPY src .
-COPY Cargo.* .
+COPY . .
 RUN cargo install --path .
 
 FROM debian:bullseye-slim
